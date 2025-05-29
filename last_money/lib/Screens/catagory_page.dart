@@ -15,9 +15,47 @@ class _CategoryPageState extends State<CategoryPage> {
   final AppDb database = AppDb();
   TextEditingController categoryNameController = TextEditingController();
 
+  @override
+  void initState() {
+    super.initState();
+
+    SessionManager.getUserId().then((userId) async {
+      if (userId != null) {
+        await seedDefaultCategories(userId);
+        setState(() {});
+      }
+    });
+  }
+
+  Future<void> seedDefaultCategories(int userId) async {
+    final existing = await database.getAllCategoryByUser(1, userId);
+    if (existing.isNotEmpty) return;
+
+    final defaultCategories = [
+      {'name': 'Gaji', 'type': 1},
+      {'name': 'Bonus', 'type': 1},
+      {'name': 'Makanan', 'type': 2},
+      {'name': 'Transportasi', 'type': 2},
+    ];
+
+    final now = DateTime.now();
+
+    for (var cat in defaultCategories) {
+      await database.into(database.categories).insert(
+            CategoriesCompanion.insert(
+              name: cat['name'] as String,
+              type: cat['type'] as int,
+              user_id: userId,
+              created_at: now,
+              updated_at: now,
+            ),
+          );
+    }
+  }
+
   Future insert(String name, int type) async {
     DateTime now = DateTime.now();
-    int? userId = await SessionManager.getUserId(); // 🔥 ambil user id
+    int? userId = await SessionManager.getUserId();
 
     if (userId == null) {
       print("User ID tidak ditemukan!");
